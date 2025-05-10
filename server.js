@@ -1,4 +1,3 @@
-// © 2025 Mokete Peter Motjeke. All Rights Reserved.
 // backend/server.js
 
 const express = require("express");
@@ -10,28 +9,30 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const checkK53Compliance = ({ gps_data, speed }) => {
-  const speedLimit = 60;
+// Simple root route to avoid "Cannot GET /"
+app.get("/", (req, res) => {
+  res.send("DriveK53 API is running.");
+});
 
-  if (speed * 3.6 > speedLimit) {
-    return {
+// K53 compliance check route
+app.post("/check", (req, res) => {
+  const { gps_data, speed } = req.body;
+  const speedLimit = 60; // Speed limit in km/h
+
+  // Convert speed from m/s to km/h
+  const currentSpeed = speed * 3.6;
+
+  // Check if speed exceeds the speed limit
+  if (currentSpeed > speedLimit) {
+    return res.status(200).json({
       violation: true,
       rule: "Speed Limit Exceeded",
-      message: `Speed limit of ${speedLimit}km/h exceeded. Your speed: ${(speed * 3.6).toFixed(1)}km/h`,
-    };
+      message: `Speed limit of ${speedLimit} km/h exceeded. Your speed: ${currentSpeed.toFixed(1)} km/h`,
+    });
   }
-  return { violation: false };
-};
 
-app.post("/check", (req, res) => {
-  const { driver_id, gps_data, speed, time } = req.body;
-
-  const result = checkK53Compliance({ gps_data, speed });
-  if (result.violation) {
-    res.status(200).json(result);
-  } else {
-    res.status(200).json({ violation: false });
-  }
+  // If no violation
+  res.status(200).json({ violation: false });
 });
 
 app.listen(PORT, () => {
